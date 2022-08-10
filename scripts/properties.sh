@@ -42,17 +42,20 @@ TERMUX_REPO_URL=(
 	https://packages-cf.termux.dev/apt/termux-main
 	https://packages-cf.termux.dev/apt/termux-root
 	https://packages-cf.termux.dev/apt/termux-x11
+	https://grimler.se/termux-ndk-r25
 )
 
 TERMUX_REPO_DISTRIBUTION=(
 	stable
 	root
 	x11
+	stable
 )
 
 TERMUX_REPO_COMPONENT=(
 	main
 	stable
+	main
 	main
 )
 
