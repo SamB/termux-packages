@@ -69,17 +69,31 @@ exec_prefix=$TERMUX_PREFIX
 --without-xxf86vm
 "
 
-# Enable win64 on 64-bit arches.
-if [ "$TERMUX_ARCH_BITS" = 64 ]; then
-	TERMUX_PKG_EXTRA_CONFIGURE_ARGS+=" --enable-win64"
-fi
-
-# Enable new WoW64 support on x86_64.
-if [ "$TERMUX_ARCH" = "x86_64" ]; then
-	TERMUX_PKG_EXTRA_CONFIGURE_ARGS+=" --enable-archs=i386,x86_64"
-fi
-
 TERMUX_PKG_BLACKLISTED_ARCHES="arm"
+
+# Contain extraneous variable
+_setup_wow() {
+	# Enable win64 on 64-bit arches.
+	if [ "$TERMUX_ARCH_BITS" = 64 ]; then
+		TERMUX_PKG_EXTRA_CONFIGURE_ARGS+=" --enable-win64"
+	fi
+
+	# Try to enable all of the WoW
+	local _wine_archs
+	case "$TERMUX_ARCH" in
+		i686) ;; # No WoW64 or anything, but supposedly you get wow16
+		x86_64)  _wine_arches="i386,x86_64";;
+		aarch64) _wine_arches="i386,x86_64,arm,arm64";;
+		arm)     _wine_arches="i386,arm";;
+		#*)       echo "Unknown TERMUX_ARCH $TERMUX_ARCH; can't configure WoW";
+	esac
+
+	if [ -v _wine_archs ]; then
+		TERMUX_PKG_EXTRA_CONFIGURE_ARGS+=" --enable-archs=$_wine_archs"
+	fi
+}
+# Update metadata
+_setup_wow
 
 _setup_llvm_mingw_toolchain() {
 	# LLVM-mingw's version number must not be the same as the NDK's.
