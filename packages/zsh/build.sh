@@ -4,11 +4,18 @@ TERMUX_PKG_LICENSE="custom"
 TERMUX_PKG_LICENSE_FILE="LICENCE"
 TERMUX_PKG_MAINTAINER="Joshua Kahn @TomJo2000"
 TERMUX_PKG_VERSION=5.9
-TERMUX_PKG_REVISION=5
-TERMUX_PKG_SRCURL="https://sourceforge.net/projects/zsh/files/zsh/$TERMUX_PKG_VERSION/zsh-$TERMUX_PKG_VERSION".tar.xz
-TERMUX_PKG_SHA256=9b8d1ecedd5b5e81fbf1918e876752a7dd948e05c1a0dba10ab863842d45acd5
+TERMUX_PKG_REVISION=6
+TERMUX_PKG_SRCURL=(
+	"https://sourceforge.net/projects/zsh/files/zsh/$TERMUX_PKG_VERSION/zsh-$TERMUX_PKG_VERSION.tar.xz"
+	"https://sourceforge.net/projects/zsh/files/zsh-doc/$TERMUX_PKG_VERSION/zsh-$TERMUX_PKG_VERSION-doc.tar.xz"
+)
+TERMUX_PKG_SHA256=(
+    9b8d1ecedd5b5e81fbf1918e876752a7dd948e05c1a0dba10ab863842d45acd5
+    6f7c091249575e68c177c5e8d5c3e9705660d0d3ca1647aea365fd00a0bd3e8a
+)
 # Remove hard link to bin/zsh as Android does not support hard links:
 TERMUX_PKG_RM_AFTER_INSTALL="bin/zsh-${TERMUX_PKG_VERSION}"
+TERMUX_PKG_BUILD_DEPENDS="texinfo"
 TERMUX_PKG_DEPENDS="libandroid-support, libcap, ncurses, termux-tools, command-not-found, pcre"
 TERMUX_PKG_RECOMMENDS="command-not-found, zsh-completions"
 TERMUX_PKG_EXTRA_CONFIGURE_ARGS="
@@ -22,6 +29,7 @@ ac_cv_func_getpwuid=yes
 ac_cv_func_setresgid=no
 ac_cv_func_setresuid=no
 "
+TERMUX_EXTRA_MAKE_INSTALL_TARGET="install.info"
 TERMUX_PKG_CONFFILES="etc/zshrc"
 TERMUX_PKG_BUILD_IN_SRC=true
 
@@ -29,6 +37,11 @@ TERMUX_PKG_BUILD_IN_SRC=true
 TERMUX_PKG_RM_AFTER_INSTALL+="
 share/zsh/${TERMUX_PKG_VERSION}/functions/_pkg5
 "
+
+termux_step_post_get_source() {
+	# work around non-uniform $STRIP value during extraction
+	cp -RP -t . zsh-$TERMUX_PKG_VERSION/*
+}
 
 termux_step_pre_configure() {
 
@@ -66,6 +79,30 @@ termux_step_post_configure() {
 	if $TERMUX_ON_DEVICE_BUILD; then
 		termux_error_exit "Package '$TERMUX_PKG_NAME' is not safe for on-device builds."
 	fi
+
+	# Prepare to build Info file(s)
+
+	# FIXME:
+	# We can't build them from their ultimate source code without
+	# YODL, and we can't build that without icmake.
+	#
+	# We can, however, use the YODL-generated TeXinfo files to
+	# rebuild the info files.
+	#
+	# For this to work, we need to delete most of the prebuilt
+	# stuff from the -doc tarball.
+	#
+	# (The files we *do* need are only deleted by "make realclean",
+	# which is the next step up from "make distclean".)
+	#
+	# Unfortunately, we still end up with FHS paths hardcoded into
+	# the docs because that is done using some sort of macros in
+	# YODL.
+	#
+	# Fortunately, it appears that the manual was written with the
+	# obscurity of YODL in mind: there are many mentions of this
+	# or that path being only a default.
+	make clean
 
 	# INSTALL file: "For a non-dynamic zsh, the default is to compile the complete, compctl, zle,
 	# computil, complist, sched, parameter, zleparameter and rlimits modules into the shell,
